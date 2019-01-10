@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.examples.socket;
+package org.myorg.quickstart;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
@@ -25,30 +25,40 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
+import org.apache.flink.streaming.connectors.redis.RedisSink;
+import org.apache.flink.streaming.connectors.redis.common.config.FlinkJedisPoolConfig;
+import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommand;
+import org.apache.flink.streaming.connectors.redis.common.mapper.RedisCommandDescription;
+import org.apache.flink.streaming.connectors.redis.common.mapper.RedisMapper;
+import org.apache.flink.api.java.tuple.Tuple2;
 
 /**
- * Implements a streaming windowed version of the "WordCount" program.
+ * Skeleton for a Flink Streaming Job.
  *
- * <p>This program connects to a server socket and reads strings from the socket.
- * The easiest way to try this out is to open a text server (at port 12345)
- * using the <i>netcat</i> tool via
- * <pre>
- * nc -l 12345
- * </pre>
- * and run this example with the hostname and the port as arguments.
+ * <p>For a tutorial how to write a Flink streaming application, check the
+ * tutorials and examples on the <a href="http://flink.apache.org/docs/stable/">Flink Website</a>.
+ *
+ * <p>To package your application into a JAR file for execution, run
+ * 'mvn clean package' on the command line.
+ *
+ * <p>If you change the name of the main class (with the public static void main(String[] args))
+ * method, change the respective entry in the POM.xml file (simply search for 'mainClass').
  */
-@SuppressWarnings("serial")
-public class SocketWindowWordCount {
+public class StreamingJob {
 
 	public static void main(String[] args) throws Exception {
 
 		// the host and the port to connect to
 		final String hostname;
 		final int port;
+		final String redisHost;
+		final int redisPort;
 		try {
 			final ParameterTool params = ParameterTool.fromArgs(args);
 			hostname = params.has("hostname") ? params.get("hostname") : "localhost";
-			port = params.getInt("port");
+			port = params.has("port") ? params.getInt("port") : 9000;
+			redisHost = params.has("redishost") ? params.get("redishost") : "localhost";
+			redisPort = params.has("redisport") ? params.getInt("redisport") : 6379;
 		} catch (Exception e) {
 			System.err.println("No port specified. Please run 'SocketWindowWordCount " +
 				"--hostname <hostname> --port <port>', where hostname (localhost by default) " +
@@ -89,6 +99,11 @@ public class SocketWindowWordCount {
 		// print the results with a single thread, rather than in parallel
 		windowCounts.print().setParallelism(1);
 
+		// output results to redis list
+		FlinkJedisPoolConfig conf = new FlinkJedisPoolConfig.Builder().setHost(redisHost).setPort(redisPort).build();
+	
+		windowCounts.addSink(new RedisSink<WordWithCount>(conf, new RedisExampleMapper()));
+	
 		env.execute("Socket Window WordCount");
 	}
 
@@ -112,6 +127,24 @@ public class SocketWindowWordCount {
 		@Override
 		public String toString() {
 			return word + " : " + count;
+		}
+	}
+
+	public static class RedisExampleMapper implements RedisMapper<WordWithCount>{
+
+		@Override
+		public RedisCommandDescription getCommandDescription() {
+			return new RedisCommandDescription(RedisCommand.LPUSH, "flink_word_count_analyse");
+		}
+	
+		@Override
+		public String getKeyFromData(WordWithCount data) {
+			return "flink_word_count_analyse";
+		}
+	
+		@Override
+		public String getValueFromData(WordWithCount data) {
+			return data.toString();
 		}
 	}
 }
