@@ -1,3 +1,4 @@
 /src/wordcount/flink/quickstart/target
 .project
 .settings
+/src/crawler/cookie.jar

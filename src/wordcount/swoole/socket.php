@@ -3,7 +3,7 @@
 $serv = new Swoole\Server('0.0.0.0', 9000, SWOOLE_BASE, SWOOLE_SOCK_TCP);
 $serv->set(array(
     'worker_num' => 4,
-    'daemonize' => false,
+    'daemonize' => true,
     'backlog' => 128,
 ));
 $serv->on('connect', function($server, $fd, $reactorId){
