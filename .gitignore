@@ -2,3 +2,4 @@
 .project
 .settings
 /src/crawler/cookie.jar
+/src/vendor

@@ -1,5 +1,7 @@
 <?php
 
+//todo args
+
 $serv = new Swoole\Server('0.0.0.0', 9000, SWOOLE_BASE, SWOOLE_SOCK_TCP);
 $serv->set(array(
     'worker_num' => 4,
