@@ -2,8 +2,7 @@
     "name": "luoxiaojun1992/tech-trend",
     "type": "project",
     "require": {
-        "guzzlehttp/guzzle": "^6.3",
-        "symfony/console": "~4.2"
+        "guzzlehttp/guzzle": "^6.3"
     },
     "require-dev": {
         "phpunit/phpunit": "^7.5"

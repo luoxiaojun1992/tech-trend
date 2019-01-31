@@ -4,10 +4,14 @@ use GuzzleHttp\Client;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-//todo args
+require_once __DIR__ . '/../common/Helper.php';
+
+$options = \getOptions($argv, ['h', 'p']);
+$redisHost = isset($options['h']) ? $options['h'] : '127.0.0.1';
+$redisPort = intval(isset($options['p']) ? $options['p'] : 6379);
 
 $redis = new \Redis();
-$redis->connect('127.0.0.1', 6379);
+$redis->connect($redisHost, $redisPort);
 
 $client = new Client();
 $cookieJar = new \GuzzleHttp\Cookie\CookieJar();
@@ -22,15 +26,6 @@ while(true) {
 
 	if (isset($jsonData['articles'])) {
 		foreach($jsonData['articles'] as $article) {
-			//TBD
-			/*
-			if ($article['id'] > $redis->get('csdn_category_max_id')) {
-				$redis->set('csdn_category_max_id', $article['id']);
-			} else {
-				continue;
-			}
-			*/
-			
 			if (!empty($article['tag'])) {
 				if ($buffer) {
 					$buffer .= (' ' . implode(' ', explode(',', $article['tag'])));
@@ -42,8 +37,7 @@ while(true) {
 	}
 
 	if ($buffer) {
-		// $redis->lpush('tech_trend:collector_pipeline', $buffer);
-		var_dump($buffer);
+		$redis->lpush('tech_trend:collector_pipeline', $buffer);
 	}
 
 	sleep(1);
